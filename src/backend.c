@@ -30,8 +30,13 @@ static void *backend__thread(void *_ptr)
 			self->tick_time = now.tv_sec;
 
 			for (mt = self->queue; mt; mt = mt->next) {
-				if (mt->expire > BRUBECK_EXPIRE_DISABLED)
+				if (mt->expire > BRUBECK_EXPIRE_DISABLED) {
 					brubeck_metric_sample(mt, self->sample, self);
+					// After sampling the metric, mark it as inactive. This way we will only
+					// sample it on the next iteration if we've received a new datapoint (which
+					// will mark the metric as active again).
+					mt->expire = mt->expire - 1;
+				}
 			}
 
 			if (self->flush)
